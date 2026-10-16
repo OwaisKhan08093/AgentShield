@@ -2,6 +2,7 @@
 
 import pytest
 from app.models import Customer, Order, ToolResult
+from app.security import AuthorizationGuard
 from tests.fixtures import (
     get_alice_customer,
     get_bob_customer,
@@ -10,6 +11,7 @@ from tests.fixtures import (
     get_successful_tool_result,
     get_denied_tool_result,
     get_refund_tool_result,
+    get_test_auth_guard,
 )
 
 
@@ -53,3 +55,9 @@ def denied_tool_result() -> ToolResult:
 def refund_tool_result() -> ToolResult:
     """Fixture returning a tool result with non-negative monetary amount."""
     return get_refund_tool_result()
+
+
+@pytest.fixture
+def auth_guard() -> AuthorizationGuard:
+    """Fixture returning an AuthorizationGuard pre-configured with synthetic test data."""
+    return get_test_auth_guard()

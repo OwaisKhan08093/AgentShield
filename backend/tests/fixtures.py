@@ -5,6 +5,7 @@ strictly decoupled from production model definitions.
 """
 
 from app.models import Customer, CustomerStatus, Order, OrderStatus, ToolResult, ToolResultStatus
+from app.security import AuthorizationGuard
 
 
 def get_alice_customer() -> Customer:
@@ -87,6 +88,20 @@ def get_refund_tool_result() -> ToolResult:
     )
 
 
+def get_test_auth_guard() -> AuthorizationGuard:
+    """Return an AuthorizationGuard pre-configured with synthetic Alice and Bob data."""
+    return AuthorizationGuard(
+        orders={
+            "A-100": get_order_a100(),
+            "B-200": get_order_b200(),
+        },
+        customers={
+            "alice": get_alice_customer(),
+            "bob": get_bob_customer(),
+        },
+    )
+
+
 # Static reference instances for direct imports
 FIXTURE_CUSTOMER_ALICE = get_alice_customer()
 FIXTURE_CUSTOMER_BOB = get_bob_customer()
@@ -94,3 +109,4 @@ FIXTURE_ORDER_A100 = get_order_a100()
 FIXTURE_ORDER_B200 = get_order_b200()
 FIXTURE_TOOL_RESULT_SUCCESS = get_successful_tool_result()
 FIXTURE_TOOL_RESULT_DENIED = get_denied_tool_result()
+FIXTURE_AUTH_GUARD = get_test_auth_guard()
