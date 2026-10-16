@@ -114,6 +114,18 @@ def get_test_reference_agent() -> ReferenceAgent:
     return ReferenceAgent(get_test_support_tools())
 
 
+def get_test_scenario_registry() -> "ScenarioRegistry":
+    """Return a fresh ScenarioRegistry with default test scenarios."""
+    from app.scenarios import create_default_registry
+    return create_default_registry()
+
+
+def get_test_scenario_runner() -> "ScenarioRunner":
+    """Return a ScenarioRunner configured with synthetic reference agent."""
+    from app.scenarios import ScenarioRunner
+    return ScenarioRunner(agent=get_test_reference_agent())
+
+
 # Static reference instances for direct imports
 FIXTURE_CUSTOMER_ALICE = get_alice_customer()
 FIXTURE_CUSTOMER_BOB = get_bob_customer()
@@ -124,3 +136,4 @@ FIXTURE_TOOL_RESULT_DENIED = get_denied_tool_result()
 FIXTURE_AUTH_GUARD = get_test_auth_guard()
 FIXTURE_SUPPORT_TOOLS = get_test_support_tools()
 FIXTURE_REFERENCE_AGENT = get_test_reference_agent()
+

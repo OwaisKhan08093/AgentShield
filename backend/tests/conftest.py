@@ -77,3 +77,18 @@ def support_tools(auth_guard: AuthorizationGuard) -> SupportTools:
 def reference_agent(support_tools: SupportTools) -> ReferenceAgent:
     """Fixture returning a ReferenceAgent bound to test SupportTools."""
     return ReferenceAgent(support_tools)
+
+
+@pytest.fixture
+def scenario_registry():
+    """Fixture returning a fresh ScenarioRegistry."""
+    from tests.fixtures import get_test_scenario_registry
+    return get_test_scenario_registry()
+
+
+@pytest.fixture
+def scenario_runner(reference_agent: ReferenceAgent):
+    """Fixture returning a ScenarioRunner bound to the test reference agent."""
+    from app.scenarios import ScenarioRunner
+    return ScenarioRunner(agent=reference_agent)
+

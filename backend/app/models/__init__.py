@@ -12,15 +12,33 @@ from app.models.event import (
     TraceEvent,
     TraceEventType,
 )
+from app.models.scenario import (
+    AttackCategory,
+    ExpectedBehavior,
+    RiskLevel,
+    Scenario,
+    ScenarioCategory,
+    ScenarioExecutionStatus,
+    ScenarioResult,
+    SuiteExecutionResult,
+)
 
 __all__ = [
     "AgentResponse",
+    "AttackCategory",
     "Customer",
     "CustomerStatus",
     "ExecutionStatus",
     "ExecutionTrace",
+    "ExpectedBehavior",
     "Order",
     "OrderStatus",
+    "RiskLevel",
+    "Scenario",
+    "ScenarioCategory",
+    "ScenarioExecutionStatus",
+    "ScenarioResult",
+    "SuiteExecutionResult",
     "SupportAction",
     "SupportRequest",
     "ToolResult",
