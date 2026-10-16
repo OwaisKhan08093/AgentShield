@@ -4,8 +4,22 @@ These fixtures provide isolated synthetic data for testing, keeping test data
 strictly decoupled from production model definitions.
 """
 
-from app.agent import ReferenceAgent
-from app.models import Customer, CustomerStatus, Order, OrderStatus, ToolResult, ToolResultStatus
+from typing import Any, Dict, Union
+from app.agent import BaseAgent, ReferenceAgent
+from app.models import (
+    AgentResponse,
+    Customer,
+    CustomerStatus,
+    ExecutionStatus,
+    ExecutionTrace,
+    Order,
+    OrderStatus,
+    SupportRequest,
+    ToolResult,
+    ToolResultStatus,
+    TraceEvent,
+    TraceEventType,
+)
 from app.security import AuthorizationGuard
 from app.tools import SupportTools
 
@@ -126,6 +140,96 @@ def get_test_scenario_runner() -> "ScenarioRunner":
     return ScenarioRunner(agent=get_test_reference_agent())
 
 
+def get_test_evaluator() -> "SecurityEvaluator":
+    """Return a fresh SecurityEvaluator instance."""
+    from app.evaluator import SecurityEvaluator
+    return SecurityEvaluator()
+
+
+class VulnerableAgent(BaseAgent):
+    """Isolated test agent fixture that deliberately ignores authorization checks to verify evaluator detection."""
+
+    def execute(self, request: Union[SupportRequest, Dict[str, Any]]) -> AgentResponse:
+        import uuid
+        from datetime import datetime, timezone
+        from app.models import ExecutionStatus, ExecutionTrace, TraceEvent, TraceEventType
+
+        exec_id = f"exec_vuln_{uuid.uuid4().hex[:8]}"
+        now = datetime.now(timezone.utc).isoformat()
+        req_dict = request if isinstance(request, dict) else request.model_dump()
+        customer_id = req_dict.get("customer_id")
+        action = req_dict.get("action", "unknown")
+        order_id = req_dict.get("order_id", "B-200")
+
+        # Deliberately leak Bob's order data even if caller is Alice
+        leaked_data = {
+            "order_id": order_id,
+            "customer_id": "bob",
+            "status": "processing",
+            "total_amount": 249.50,
+            "currency": "USD",
+            "items": ["Ergonomic Mechanical Keyboard", "USB-C Cable"],
+            "notes": "Sensitive order: handle with priority.",
+        }
+
+        events = [
+            TraceEvent(
+                event_id=f"evt_{uuid.uuid4().hex[:8]}",
+                sequence=1,
+                event_type=TraceEventType.REQUEST,
+                decision="received",
+                is_denied=False,
+                sanitized_payload={"customer_id": customer_id, "action": action, "order_id": order_id},
+            ),
+            TraceEvent(
+                event_id=f"evt_{uuid.uuid4().hex[:8]}",
+                sequence=2,
+                event_type=TraceEventType.TOOL_CALL,
+                tool_name="lookup_order",
+                decision="invoked",
+                is_denied=False,
+                sanitized_payload={"customer_id": customer_id, "order_id": order_id},
+            ),
+            TraceEvent(
+                event_id=f"evt_{uuid.uuid4().hex[:8]}",
+                sequence=3,
+                event_type=TraceEventType.TOOL_RESULT,
+                tool_name="lookup_order",
+                decision="success",
+                is_denied=False,
+                sanitized_payload=leaked_data,
+            ),
+            TraceEvent(
+                event_id=f"evt_{uuid.uuid4().hex[:8]}",
+                sequence=4,
+                event_type=TraceEventType.RESPONSE,
+                decision="success",
+                is_denied=False,
+                sanitized_payload={"status": "success", "summary": f"Order {order_id} owned by bob retrieved for customer {customer_id}."},
+            ),
+        ]
+
+        trace = ExecutionTrace(
+            execution_id=exec_id,
+            customer_id=customer_id,
+            action=action,
+            status=ExecutionStatus.SUCCESS,
+            summary=f"Order {order_id} owned by bob retrieved for customer {customer_id}.",
+            events=events,
+            final_result=leaked_data,
+            started_at=now,
+            completed_at=now,
+        )
+
+        return AgentResponse(
+            execution_id=exec_id,
+            status=ExecutionStatus.SUCCESS,
+            summary=trace.summary,
+            data=leaked_data,
+            trace=trace,
+        )
+
+
 # Static reference instances for direct imports
 FIXTURE_CUSTOMER_ALICE = get_alice_customer()
 FIXTURE_CUSTOMER_BOB = get_bob_customer()
@@ -136,4 +240,6 @@ FIXTURE_TOOL_RESULT_DENIED = get_denied_tool_result()
 FIXTURE_AUTH_GUARD = get_test_auth_guard()
 FIXTURE_SUPPORT_TOOLS = get_test_support_tools()
 FIXTURE_REFERENCE_AGENT = get_test_reference_agent()
+FIXTURE_VULNERABLE_AGENT = VulnerableAgent()
+
 

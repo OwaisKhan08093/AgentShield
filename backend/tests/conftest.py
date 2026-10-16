@@ -92,3 +92,18 @@ def scenario_runner(reference_agent: ReferenceAgent):
     from app.scenarios import ScenarioRunner
     return ScenarioRunner(agent=reference_agent)
 
+
+@pytest.fixture
+def security_evaluator():
+    """Fixture returning a fresh SecurityEvaluator instance."""
+    from app.evaluator import SecurityEvaluator
+    return SecurityEvaluator()
+
+
+@pytest.fixture
+def vulnerable_agent():
+    """Fixture returning a deliberately vulnerable test agent for testing violation detection."""
+    from tests.fixtures import VulnerableAgent
+    return VulnerableAgent()
+
+
