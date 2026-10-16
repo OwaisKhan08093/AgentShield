@@ -1,6 +1,7 @@
 """Pytest configuration and shared fixtures for AgentShield tests."""
 
 import pytest
+from app.agent import ReferenceAgent
 from app.models import Customer, Order, ToolResult
 from app.security import AuthorizationGuard
 from app.tools import SupportTools
@@ -13,6 +14,8 @@ from tests.fixtures import (
     get_denied_tool_result,
     get_refund_tool_result,
     get_test_auth_guard,
+    get_test_reference_agent,
+    get_test_support_tools,
 )
 
 
@@ -68,3 +71,9 @@ def auth_guard() -> AuthorizationGuard:
 def support_tools(auth_guard: AuthorizationGuard) -> SupportTools:
     """Fixture returning SupportTools bound to test AuthorizationGuard."""
     return SupportTools(auth_guard)
+
+
+@pytest.fixture
+def reference_agent(support_tools: SupportTools) -> ReferenceAgent:
+    """Fixture returning a ReferenceAgent bound to test SupportTools."""
+    return ReferenceAgent(support_tools)

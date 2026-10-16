@@ -4,8 +4,10 @@ These fixtures provide isolated synthetic data for testing, keeping test data
 strictly decoupled from production model definitions.
 """
 
+from app.agent import ReferenceAgent
 from app.models import Customer, CustomerStatus, Order, OrderStatus, ToolResult, ToolResultStatus
 from app.security import AuthorizationGuard
+from app.tools import SupportTools
 
 
 def get_alice_customer() -> Customer:
@@ -102,6 +104,16 @@ def get_test_auth_guard() -> AuthorizationGuard:
     )
 
 
+def get_test_support_tools() -> SupportTools:
+    """Return a SupportTools instance bound to the test AuthorizationGuard."""
+    return SupportTools(get_test_auth_guard())
+
+
+def get_test_reference_agent() -> ReferenceAgent:
+    """Return a ReferenceAgent configured with synthetic tools and guard."""
+    return ReferenceAgent(get_test_support_tools())
+
+
 # Static reference instances for direct imports
 FIXTURE_CUSTOMER_ALICE = get_alice_customer()
 FIXTURE_CUSTOMER_BOB = get_bob_customer()
@@ -110,3 +122,5 @@ FIXTURE_ORDER_B200 = get_order_b200()
 FIXTURE_TOOL_RESULT_SUCCESS = get_successful_tool_result()
 FIXTURE_TOOL_RESULT_DENIED = get_denied_tool_result()
 FIXTURE_AUTH_GUARD = get_test_auth_guard()
+FIXTURE_SUPPORT_TOOLS = get_test_support_tools()
+FIXTURE_REFERENCE_AGENT = get_test_reference_agent()
