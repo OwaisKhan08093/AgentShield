@@ -3,6 +3,7 @@
 import pytest
 from app.models import Customer, Order, ToolResult
 from app.security import AuthorizationGuard
+from app.tools import SupportTools
 from tests.fixtures import (
     get_alice_customer,
     get_bob_customer,
@@ -61,3 +62,9 @@ def refund_tool_result() -> ToolResult:
 def auth_guard() -> AuthorizationGuard:
     """Fixture returning an AuthorizationGuard pre-configured with synthetic test data."""
     return get_test_auth_guard()
+
+
+@pytest.fixture
+def support_tools(auth_guard: AuthorizationGuard) -> SupportTools:
+    """Fixture returning SupportTools bound to test AuthorizationGuard."""
+    return SupportTools(auth_guard)
