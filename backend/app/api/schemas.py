@@ -1,10 +1,17 @@
 """API request and response Pydantic schemas for AgentShield."""
 
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.finding import EvaluationOutcome, SummaryCounts
-from app.models.scenario import ExpectedBehavior, RiskLevel, ScenarioCategory
+from app.models.event import ExecutionStatus
+from app.models.finding import EvaluationOutcome, EvaluationReport, SummaryCounts
+from app.models.scenario import (
+    ExpectedBehavior,
+    RiskLevel,
+    ScenarioCategory,
+    ScenarioExecutionStatus,
+)
 
 
 class ScenarioSummaryResponse(BaseModel):
@@ -104,3 +111,59 @@ class RunCreateResponse(BaseModel):
     not_run_count: int = Field(..., ge=0, description="Total not-run scenarios.")
     summary_counts: SummaryCounts = Field(..., description="Detailed summary tally.")
     metrics_summary: Dict[str, Any] = Field(default_factory=dict, description="Key metric snapshot summary.")
+
+
+class FindingSummaryResponse(BaseModel):
+    """Concise summary of an evaluated security rule finding."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    finding_id: str = Field(..., description="Unique finding identifier.")
+    rule_id: str = Field(..., description="Evaluated security rule ID.")
+    rule_name: str = Field(..., description="Descriptive name of the security rule.")
+    outcome: EvaluationOutcome = Field(..., description="Outcome of the rule check.")
+    severity: RiskLevel = Field(..., description="Risk severity level.")
+    message: str = Field(..., description="Explanation of the finding.")
+    timestamp: str = Field(..., description="Timestamp of finding recording.")
+
+
+class ScenarioResultResponse(BaseModel):
+    """Detailed per-scenario evaluation result for a run."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    scenario_id: str = Field(..., description="Unique scenario identifier.")
+    scenario_name: str = Field(..., description="Human-readable scenario name.")
+    category: ScenarioCategory = Field(..., description="Attack category.")
+    risk_level: RiskLevel = Field(..., description="Risk severity level.")
+    outcome: EvaluationOutcome = Field(..., description="Verdict: pass, fail, error, or not_run.")
+    execution_status: ScenarioExecutionStatus = Field(..., description="Runner execution status.")
+    actual_status: Optional[ExecutionStatus] = Field(default=None, description="Actual agent response status.")
+    expected_status: ExecutionStatus = Field(..., description="Expected execution status.")
+    attempt_detected: bool = Field(default=False, description="Whether an attack attempt was detected.")
+    violation_prevented: bool = Field(default=False, description="Whether the violation was prevented.")
+    data_exposed: bool = Field(default=False, description="Whether data was exposed.")
+    explanation: str = Field(..., description="Evaluation summary explanation.")
+    evaluated_at: str = Field(..., description="Evaluation timestamp.")
+    duration_ms: Optional[float] = Field(default=None, description="Execution duration in milliseconds if available.")
+    finding_count: int = Field(..., ge=0, description="Total count of findings for this scenario.")
+    findings: List[FindingSummaryResponse] = Field(default_factory=list, description="List of rule finding summaries.")
+
+
+class EvaluationReportExportResponse(BaseModel):
+    """Export container for structured evaluation report with schema version metadata."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: str = Field(
+        default="1.0.0",
+        description="Version of the AgentShield evaluation report export schema.",
+    )
+    exported_at: str = Field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(),
+        description="ISO 8601 UTC timestamp when export was generated.",
+    )
+    report: EvaluationReport = Field(
+        ...,
+        description="Full structured evaluation report.",
+    )

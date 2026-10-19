@@ -1,12 +1,20 @@
-"""Evaluation run triggering and listing API endpoints."""
+"""Evaluation run triggering, listing, results, trace, and report API endpoints."""
 
+from datetime import datetime, timezone
 import logging
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
 from app.api.dependencies import get_evaluation_repository, get_scenario_registry
-from app.api.schemas import CreateRunRequest, RunCreateResponse
+from app.api.schemas import (
+    CreateRunRequest,
+    EvaluationReportExportResponse,
+    FindingSummaryResponse,
+    RunCreateResponse,
+    ScenarioResultResponse,
+)
 from app.evaluator import get_default_evaluator
+from app.models.event import TraceEvent
 from app.models.run import EvaluationRunRecord
 from app.scenarios.registry import ScenarioRegistry
 from app.scenarios.runner import ScenarioRunner
@@ -180,6 +188,7 @@ def list_runs(
     description="Retrieve aggregate summary metrics for a specific evaluation run ID.",
     responses={
         404: {"description": "Run ID not found."},
+        500: {"description": "Database query error."},
     },
 )
 def get_run(
@@ -204,3 +213,165 @@ def get_run(
         )
 
     return record
+
+
+@router.get(
+    "/{run_id}/results",
+    response_model=List[ScenarioResultResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Get detailed per-scenario evaluation results",
+    description="Retrieve detailed per-scenario results for an evaluation run in deterministic suite execution order.",
+    responses={
+        404: {"description": "Run ID not found."},
+        500: {"description": "Storage retrieval error."},
+    },
+)
+def get_run_results(
+    run_id: str,
+    repository: SQLiteEvaluationRepository = Depends(get_evaluation_repository),
+) -> List[ScenarioResultResponse]:
+    """Return detailed per-scenario evaluation records for the specified run."""
+    clean_id = run_id.strip() if run_id else ""
+    if not clean_id or not repository.run_exists(clean_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Evaluation run '{clean_id}' was not found in storage.",
+        )
+
+    try:
+        report = repository.get_report(clean_id)
+    except StorageError as e:
+        logger.error("Storage error retrieving report for run %s: %s", clean_id, e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error retrieving evaluation report.",
+        )
+
+    if report is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Evaluation report for run '{clean_id}' was not found in storage.",
+        )
+
+    results: List[ScenarioResultResponse] = []
+    for se in report.scenario_evaluations:
+        finding_summaries = [
+            FindingSummaryResponse(
+                finding_id=f.finding_id,
+                rule_id=f.rule_id,
+                rule_name=f.rule_name,
+                outcome=f.outcome,
+                severity=f.severity,
+                message=f.message,
+                timestamp=f.timestamp,
+            )
+            for f in se.findings
+        ]
+        results.append(
+            ScenarioResultResponse(
+                scenario_id=se.scenario_id,
+                scenario_name=se.scenario_name,
+                category=se.category,
+                risk_level=se.risk_level,
+                outcome=se.outcome,
+                execution_status=se.execution_status,
+                actual_status=se.actual_status,
+                expected_status=se.expected_status,
+                attempt_detected=se.attempt_detected,
+                violation_prevented=se.violation_prevented,
+                data_exposed=se.data_exposed,
+                explanation=se.explanation,
+                evaluated_at=se.evaluated_at,
+                duration_ms=None,
+                finding_count=len(se.findings),
+                findings=finding_summaries,
+            )
+        )
+    return results
+
+
+@router.get(
+    "/{run_id}/trace",
+    response_model=List[TraceEvent],
+    status_code=status.HTTP_200_OK,
+    summary="Get sanitized execution traces",
+    description="Retrieve chronological ordered execution trace events for an evaluation run with optional scenario filtering.",
+    responses={
+        404: {"description": "Run ID not found."},
+        500: {"description": "Storage retrieval error."},
+    },
+)
+def get_run_trace(
+    run_id: str,
+    scenario_id: Optional[str] = Query(
+        default=None,
+        description="Optional scenario identifier to filter trace events.",
+    ),
+    repository: SQLiteEvaluationRepository = Depends(get_evaluation_repository),
+) -> List[TraceEvent]:
+    """Return chronological ordered execution trace events for a run."""
+    clean_id = run_id.strip() if run_id else ""
+    if not clean_id or not repository.run_exists(clean_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Evaluation run '{clean_id}' was not found in storage.",
+        )
+
+    clean_scenario_id = scenario_id.strip() if scenario_id else None
+    try:
+        events = repository.get_trace_events(clean_id, scenario_id=clean_scenario_id)
+        return events
+    except StorageError as e:
+        logger.error("Storage error retrieving traces for run %s: %s", clean_id, e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error retrieving execution trace events.",
+        )
+
+
+@router.get(
+    "/{run_id}/report.json",
+    response_model=EvaluationReportExportResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Export full evaluation report",
+    description="Export complete structured EvaluationReport with schema version metadata.",
+    responses={
+        404: {"description": "Run ID not found."},
+        500: {"description": "Storage retrieval error."},
+    },
+)
+def export_run_report(
+    run_id: str,
+    response: Response,
+    repository: SQLiteEvaluationRepository = Depends(get_evaluation_repository),
+) -> EvaluationReportExportResponse:
+    """Export complete structured evaluation report JSON with schema version header and metadata."""
+    clean_id = run_id.strip() if run_id else ""
+    if not clean_id or not repository.run_exists(clean_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Evaluation run '{clean_id}' was not found in storage.",
+        )
+
+    try:
+        report = repository.get_report(clean_id)
+    except StorageError as e:
+        logger.error("Storage error retrieving report for run %s: %s", clean_id, e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error retrieving evaluation report.",
+        )
+
+    if report is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Evaluation report for run '{clean_id}' was not found in storage.",
+        )
+
+    response.headers["Content-Disposition"] = f'attachment; filename="report_{clean_id}.json"'
+
+    return EvaluationReportExportResponse(
+        schema_version="1.0.0",
+        exported_at=datetime.now(timezone.utc).isoformat(),
+        report=report,
+    )
