@@ -6,3 +6,4 @@ export * from './Input';
 export * from './LoadingSpinner';
 export * from './EmptyState';
 export * from './ErrorAlert';
+export * from './Select';

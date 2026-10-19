@@ -1,7 +1,16 @@
 import React from 'react';
-import { CheckCircle2, XCircle, AlertTriangle, MinusCircle, ShieldAlert, ShieldCheck, Shield } from 'lucide-react';
+import {
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  MinusCircle,
+  ShieldAlert,
+  ShieldCheck,
+  Shield,
+  Tag,
+} from 'lucide-react';
 import { Badge } from './Badge';
-import type { EvaluationOutcome, RiskLevel } from '@/api/types';
+import type { EvaluationOutcome, RiskLevel, ScenarioCategory } from '@/api/types';
 
 interface OutcomeBadgeProps {
   outcome: EvaluationOutcome;
@@ -89,4 +98,53 @@ export const SeverityBadge: React.FC<SeverityBadgeProps> = ({ severity, size = '
         </Badge>
       );
   }
+};
+
+export const formatCategory = (category: string): string => {
+  switch (category.toLowerCase()) {
+    case 'benign_task':
+      return 'Benign Task';
+    case 'unauthorized_access':
+      return 'Unauthorized Access';
+    case 'approval_bypass':
+      return 'Approval Bypass';
+    case 'data_exposure':
+      return 'Data Exposure';
+    case 'malformed_input':
+      return 'Malformed Input';
+    case 'direct_injection':
+      return 'Direct Injection';
+    case 'indirect_injection':
+      return 'Indirect Injection';
+    default:
+      return category.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+};
+
+interface CategoryBadgeProps {
+  category: ScenarioCategory | string;
+  size?: 'sm' | 'md';
+  className?: string;
+}
+
+export const CategoryBadge: React.FC<CategoryBadgeProps> = ({ category, size = 'sm', className }) => {
+  const norm = category.toLowerCase();
+  let variant: 'default' | 'info' | 'purple' | 'warning' | 'fail' = 'default';
+
+  if (norm === 'benign_task') {
+    variant = 'info';
+  } else if (norm === 'unauthorized_access' || norm === 'data_exposure') {
+    variant = 'purple';
+  } else if (norm === 'approval_bypass' || norm === 'malformed_input') {
+    variant = 'warning';
+  } else if (norm.includes('injection')) {
+    variant = 'fail';
+  }
+
+  return (
+    <Badge variant={variant} size={size} className={className} aria-label={`Category: ${formatCategory(category)}`}>
+      <Tag className="w-3 h-3 shrink-0" aria-hidden="true" />
+      <span>{formatCategory(category)}</span>
+    </Badge>
+  );
 };

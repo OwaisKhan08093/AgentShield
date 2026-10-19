@@ -322,6 +322,6 @@ See [frontend/README.md](frontend/README.md) for comprehensive instructions on e
 - [x] **Day 4**: SQLite Persistence Layer, Scenario & Run APIs, Traces & Reports
 - [x] **Day 5 (PRD Days 17–18)**: API Integration Testing, Real Timeout Handling, Failure Semantics & Documentation
 - [x] **Day 6 (PRD Day 19)**: Frontend Scaffolding, Project Setup & Security Design System (React, Vite, TS, Tailwind, Router, Typed API Client)
-- [ ] **PRD Day 20**: Scenario Explorer & Definition Inspector
+- [x] **Day 7 (PRD Day 20)**: Scenario Catalog & Explorer (Live `/api/v1/scenarios` integration, search & category/risk filters, detail view `/scenarios/:scenarioId`, expected assertions & verdict inspector)
 - [ ] **PRD Days 21–22**: Evaluation Run Dashboard, Execution Controls & Trace Inspector
-- [ ] **PRD Days 23–24**: JSON Report Visualizer & Metrics Analytics
+- [ ] **PRD Days 23–24**: JSON Report Visualizer, Metrics Analytics & Demo Script

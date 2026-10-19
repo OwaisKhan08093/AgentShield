@@ -2,7 +2,7 @@
 
 The AgentShield Web Console provides an automated, security-focused user interface for configuring, running, and analyzing security evaluations of tool-using AI customer support agents.
 
-Implemented as part of **PRD Day 19 (Frontend Scaffolding, Project Setup & Design System)**.
+Implemented through **PRD Day 20 (Scenario Catalog & Explorer)**.
 
 ---
 
@@ -117,6 +117,10 @@ frontend/
     │   │   ├── Sidebar.tsx # Navigation sidebar with route indicators and badge
     │   │   ├── Layout.tsx  # Responsive layout wrapper with mobile drawer
     │   │   └── index.ts    # Re-export entrypoint for layout components
+    │   ├── scenarios/
+    │   │   ├── ScenarioCard.tsx          # Card displaying scenario metadata, objective, and link
+    │   │   ├── ScenarioFilters.tsx       # Text search, category/risk selects, and clear filters
+    │   │   └── ExpectedBehaviorPanel.tsx # Assertions, status badge, PASS/FAIL criteria panel
     │   └── ui/
     │       ├── Badge.tsx         # Semantic status and severity pill badges
     │       ├── Button.tsx        # Accessible interactive button with variants & loading state
@@ -125,20 +129,23 @@ frontend/
     │       ├── ErrorAlert.tsx    # Accessible error callout with retry action
     │       ├── Input.tsx         # Accessible text and search input field
     │       ├── LoadingSpinner.tsx# Accessible animated spinner
-    │       ├── StatusBadge.tsx   # Security outcome (PASS/FAIL/ERROR/NOT_RUN) & severity badges
+    │       ├── Select.tsx        # Accessible dropdown select input
+    │       ├── StatusBadge.tsx   # Security outcome, severity, and category badges
     │       └── index.ts          # Re-export entrypoint for UI design system
     ├── pages/
-    │   ├── Overview.tsx              # Platform landing page, pipeline visualizer & health status
-    │   ├── ScenariosPlaceholder.tsx  # Intentional placeholder with live API scenario test
-    │   ├── RunsPlaceholder.tsx       # Intentional placeholder with live API runs test
-    │   ├── DocsPlaceholder.tsx       # Live links to Swagger, ReDoc, OpenAPI schema, and GitHub
-    │   └── NotFound.tsx              # Accessible 404 fallback page
+    │   ├── Overview.tsx          # Platform landing page, pipeline visualizer & health status
+    │   ├── Scenarios.tsx         # Interactive Scenario Catalog & Explorer (PRD Day 20)
+    │   ├── ScenarioDetail.tsx    # Comprehensive Scenario Detail View (PRD Day 20)
+    │   ├── RunsPlaceholder.tsx   # Intentional placeholder with live API runs test (Days 21–22)
+    │   ├── DocsPlaceholder.tsx   # Live links to Swagger, ReDoc, OpenAPI schema, and GitHub
+    │   └── NotFound.tsx          # Accessible 404 fallback page
     ├── test/
-    │   ├── api-client.test.ts  # API client unit tests (URL parsing, HTTP errors, timeouts)
-    │   ├── components.test.tsx # UI primitive and route rendering integration tests
-    │   └── setup.ts            # JSDOM test harness setup with fetch mocking
+    │   ├── api-client.test.ts        # API client unit tests (URL parsing, HTTP errors, timeouts)
+    │   ├── components.test.tsx       # UI primitive and route rendering integration tests
+    │   ├── scenario-explorer.test.tsx# Catalog and detail tests (search, filters, 404, navigation)
+    │   └── setup.ts                  # JSDOM test harness setup with fetch mocking
     └── utils/
-        └── cn.ts               # CSS class merger utility (clsx + tailwind-merge)
+        └── cn.ts                 # CSS class merger utility (clsx + tailwind-merge)
 ```
 
 ---
@@ -156,38 +163,53 @@ The interface uses a deliberate, high-contrast dark theme engineered for clarity
 
 ---
 
-## 6. Backend Integration
+## 6. Scenario Catalog & Detail Views (PRD Day 20)
 
-The frontend connects directly to the AgentShield FastAPI backend:
+### Scenario Catalog & Explorer (`/scenarios`)
+- **Live Data Source**: `GET /api/v1/scenarios`
+- **Text Search**: Real-time filtering across `scenario_id`, `name`, `description`, `security_objective`, `category`, and `tags`.
+- **Category Filter**: Select from canonical categories dynamically derived from registry data (`benign_task`, `unauthorized_access`, `approval_bypass`, `data_exposure`, `malformed_input`, `direct_injection`, `indirect_injection`).
+- **Risk Filter**: Select by severity level (`critical`, `high`, `medium`, `low`, `informational`).
+- **Summary Metrics Bar**: Real-time counts of Total Scenarios, Critical Risk, High Risk, Medium Risk, and Low/Info counts.
+- **Empty & Error States**: Distinct handling for empty registry, zero search matches (with "Clear All Filters" button), and backend connection failure (with retry button).
 
-1. **Live Health Check**: Polled automatically on load and every 30 seconds via `GET /health`. Shows real-time Online / Offline status with timestamp and manual refresh.
-2. **Scenarios API**: Ready to query `GET /api/v1/scenarios` and `GET /api/v1/scenarios/{id}`.
-3. **Runs API**: Ready to query `POST /api/v1/runs`, `GET /api/v1/runs`, and `GET /api/v1/runs/{id}`.
-4. **Results & Traces API**: Ready to query `GET /api/v1/runs/{id}/results`, `GET /api/v1/runs/{id}/trace`, and `GET /api/v1/runs/{id}/export`.
+### Scenario Detail View (`/scenarios/:scenarioId`)
+- **Live Data Source**: `GET /api/v1/scenarios/{scenario_id}`
+- **Security Objective**: Dedicated prominent callout emphasizing the target boundary or policy under audit.
+- **Expected Behavior & Assertions**:
+  - Expected execution status (`success`, `denied`, `error`).
+  - Tool-level authorization denial requirement.
+  - Prohibited customer identity exposure constraints.
+  - Order data confidentiality requirements.
+  - Target tool invocation specification.
+- **Verdict Criteria**: Explicit criteria defining a `PASS` verdict vs. a `FAIL` security violation.
+- **Navigation & Usability**: Back to catalog navigation, copy scenario ID action, race-condition protection against rapid navigation, and 404 Not Found state.
 
 ---
 
-## 7. Current Implemented Scope (PRD Day 19)
+## 7. Current Implemented Scope
 
 - [x] Modern React + Vite + TypeScript application scaffolding in `frontend/`.
 - [x] Tailored security dark design system tokens, typography, and utility classes.
-- [x] Full suite of reusable design system primitives (`Button`, `Badge`, `StatusBadge`, `Card`, `Input`, `LoadingSpinner`, `EmptyState`, `ErrorAlert`).
+- [x] Full suite of reusable design system primitives (`Button`, `Badge`, `StatusBadge`, `Card`, `Input`, `Select`, `LoadingSpinner`, `EmptyState`, `ErrorAlert`).
 - [x] Responsive application shell with desktop sidebar, mobile drawer, and dynamic header.
 - [x] Live backend connectivity monitoring against `GET /health`.
 - [x] Comprehensive, typed API client (`ApiClient`, `apiClient`) with timeout protection and structured error handling.
 - [x] Complete TypeScript domain models matching backend Pydantic schemas.
 - [x] Professional landing/overview page detailing the 6-stage evaluation pipeline and true product scope.
-- [x] Unit and component integration tests verifying API client behavior and design system rendering.
+- [x] **Interactive Scenario Catalog & Explorer** at `/scenarios` (PRD Day 20).
+- [x] **Detailed Scenario Specification View** at `/scenarios/:scenarioId` (PRD Day 20).
+- [x] Comprehensive unit and integration test coverage across API client, UI primitives, and scenario explorer (24 passing tests).
 
 ---
 
 ## 8. Intentionally Deferred Milestones
 
-In accordance with PRD planning, the following modules are intentionally deferred and have honest placeholder states:
+In accordance with PRD planning, the following modules are intentionally deferred to subsequent milestones:
 
-- **PRD Day 20**: Scenario Catalog & Interactive Explorer (category filtering, risk search, payload preview).
 - **PRD Days 21–22**: Evaluation Run Dashboard, Execution Controls, Findings Drawer & Sanitized Trace Viewer.
 - **PRD Day 23**: Machine-readable JSON Report Visualizer, Summary Metrics & CSV/JSON Export Views.
+- **PRD Day 24**: End-to-end demo script, polish, and final documentation.
 
 ---
 

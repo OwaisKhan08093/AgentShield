@@ -35,6 +35,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           description: 'Platform schemas, evaluation assertions, and integration specs',
         };
       default:
+        if (location.pathname.startsWith('/scenarios/')) {
+          return {
+            title: 'Scenario Detail',
+            description: 'Inspect security assertions, expected behaviors, and target boundaries',
+          };
+        }
         return {
           title: 'AgentShield Platform',
           description: 'Security evaluation and benchmarking',

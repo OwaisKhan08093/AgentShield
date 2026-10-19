@@ -90,7 +90,7 @@ describe('Application Shell and Navigation', () => {
     expect(screen.getByText(/Security evaluation platform for tool-using AI agents/i)).toBeInTheDocument();
   });
 
-  it('renders Scenarios placeholder page on /scenarios', async () => {
+  it('renders Scenarios catalog page on /scenarios', async () => {
     await act(async () => {
       render(
         <MemoryRouter initialEntries={['/scenarios']}>
@@ -99,7 +99,6 @@ describe('Application Shell and Navigation', () => {
       );
     });
     expect(screen.getByText(/Scenario Catalog & Explorer/i)).toBeInTheDocument();
-    expect(screen.getByText(/PRD Day 20 Milestone/i)).toBeInTheDocument();
   });
 
   it('renders Runs placeholder page on /runs', async () => {
