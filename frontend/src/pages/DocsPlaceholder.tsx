@@ -25,6 +25,12 @@ export const DocsPlaceholder: React.FC = () => {
       icon: Cpu,
     },
     {
+      title: 'End-to-End Demo Guide (DEMO_GUIDE.md)',
+      desc: 'Step-by-step walkthrough covering 3–5 min demo script, verification, API curls, and export workflows.',
+      url: 'https://github.com/OwaisKhan08093/AgentShield/blob/main/docs/DEMO_GUIDE.md',
+      icon: BookOpen,
+    },
+    {
       title: 'AgentShield GitHub Repository',
       desc: 'Full source code, implementation PRD, test suites, threat models, and architectural docs.',
       url: 'https://github.com/OwaisKhan08093/AgentShield',

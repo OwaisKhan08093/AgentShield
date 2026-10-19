@@ -277,14 +277,8 @@ Provides client-side RFC-4180 compliant CSV exports for downstream security anal
 - [x] **Machine-Readable JSON Report Visualizer** with collapsible tree, search, and raw JSON view (PRD Day 23).
 - [x] **Comprehensive Summary Metrics Breakdown** with 8 core metrics, category & risk breakdowns, and limitation disclosure (PRD Day 23).
 - [x] **RFC-4180 CSV Export Utility** for Scenarios, Findings, and Metrics with formula injection mitigation (PRD Day 23).
+- [x] **End-to-End Demo Script & Documentation** (PRD Day 24) — See [docs/DEMO_GUIDE.md](../docs/DEMO_GUIDE.md).
 - [x] Comprehensive unit and integration test suite (66 passing tests across 6 test suites).
-
----
-
-## 9. Next Milestone (PRD Day 24)
-
-In accordance with PRD planning, the next milestone is:
-- **PRD Day 24**: End-to-end demo script, polish, and final documentation.
 
 ---
 

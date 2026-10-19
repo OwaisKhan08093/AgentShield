@@ -88,6 +88,13 @@
 
 ---
 
+## End-to-End Demonstration Guide
+
+For a complete, scripted 3–5 minute evaluation walkthrough from initial boot to CSV/JSON report exports, see:
+👉 **[AgentShield End-to-End Demo Guide (`docs/DEMO_GUIDE.md`)](docs/DEMO_GUIDE.md)**
+
+---
+
 ## Local Setup & Quickstart
 
 ### 1. Clone & Navigate to Project
@@ -135,37 +142,62 @@ AGENTSHIELD_DB_PATH="agentshield.db"
 
 ## Running the Automated Test Suite
 
-AgentShield maintains a strict 100% passing test baseline with zero deprecation warnings:
+AgentShield maintains a strict 100% passing test baseline across backend and frontend suites:
 
+### Backend Test Suite (245 Pytest Tests)
 From the repository root:
 ```powershell
-backend\.venv\Scripts\python.exe -m pytest
+.\backend\.venv\Scripts\python.exe -m pytest -q
 ```
 
-Or from within the `backend/` directory:
+### Frontend Test Suite (66 Vitest Tests) & Build
+From the repository root:
 ```powershell
-pytest
+cd frontend
+npm test
+npm run build
 ```
 
-To run tests with full verbose output:
+### Automated End-to-End Smoke Test (8 Steps)
+Exercises health, scenario catalog, run execution, relational persistence, traces, JSON report export, and failure detection:
 ```powershell
-pytest -v
+.\backend\.venv\Scripts\python.exe scripts/smoke_test.py
 ```
 
 ---
 
-## Starting the API Server
+## Starting the Application
 
-From the `backend/` directory with virtualenv active:
+### Option A — Using Startup Helper Scripts (Recommended)
 
+Terminal 1 (Backend):
 ```powershell
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+.\scripts\start_backend.ps1
 ```
 
-The service will start at:
-- **Base URL**: `http://127.0.0.1:8000`
-- **Interactive Swagger OpenAPI Documentation**: `http://127.0.0.1:8000/docs`
-- **ReDoc Interactive Documentation**: `http://127.0.0.1:8000/redoc`
+Terminal 2 (Frontend):
+```powershell
+.\scripts\start_frontend.ps1
+```
+
+### Option B — Direct Terminal Commands
+
+**Backend (FastAPI on `http://127.0.0.1:8000`):**
+```powershell
+.\backend\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --reload --host 127.0.0.1 --port 8000
+```
+
+**Frontend (Vite Console on `http://localhost:5173`):**
+```powershell
+cd frontend
+npm run dev
+```
+
+The interactive services will be available at:
+- **Web Console**: `http://localhost:5173`
+- **Backend API**: `http://127.0.0.1:8000`
+- **Interactive Swagger OpenAPI**: `http://127.0.0.1:8000/docs`
+- **ReDoc API Spec**: `http://127.0.0.1:8000/redoc`
 
 ---
 
@@ -325,4 +357,4 @@ See [frontend/README.md](frontend/README.md) for comprehensive instructions on e
 - [x] **Day 6 (PRD Day 19)**: Frontend Scaffolding, Project Setup & Security Design System (React, Vite, TS, Tailwind, Router, Typed API Client)
 - [x] **Day 8 (PRD Days 21–22)**: Evaluation Run Dashboard, Execution Controls & Trace Inspector
 - [x] **Day 9 (PRD Day 23)**: Machine-Readable JSON Report Visualizer, Summary Metrics & CSV/JSON Export Views
-- [ ] **PRD Day 24**: End-to-end Demo Script, Polish & Final Documentation
+- [x] **Day 10 (PRD Day 24)**: End-to-End Demo Script, Polish & Final Documentation (Completed)
