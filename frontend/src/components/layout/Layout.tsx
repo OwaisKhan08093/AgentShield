@@ -41,6 +41,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             description: 'Inspect security assertions, expected behaviors, and target boundaries',
           };
         }
+        if (location.pathname.startsWith('/runs/')) {
+          return {
+            title: 'Evaluation Run Detail',
+            description: 'Scenario outcomes, security metrics, and execution trace inspection',
+          };
+        }
         return {
           title: 'AgentShield Platform',
           description: 'Security evaluation and benchmarking',

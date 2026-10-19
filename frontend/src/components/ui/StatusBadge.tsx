@@ -148,3 +148,55 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({ category, size = '
     </Badge>
   );
 };
+
+interface ExecutionStatusBadgeProps {
+  status: string | null | undefined;
+  size?: 'sm' | 'md';
+  className?: string;
+}
+
+export const ExecutionStatusBadge: React.FC<ExecutionStatusBadgeProps> = ({ status, size = 'sm', className }) => {
+  if (!status) {
+    return (
+      <Badge variant="default" size={size} className={className}>
+        <span>none</span>
+      </Badge>
+    );
+  }
+
+  const norm = status.toLowerCase();
+  switch (norm) {
+    case 'success':
+    case 'completed':
+      return (
+        <Badge variant="pass" size={size} className={className} aria-label={`Execution: ${status}`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+          <span>{status}</span>
+        </Badge>
+      );
+    case 'denied':
+    case 'blocked':
+      return (
+        <Badge variant="warning" size={size} className={className} aria-label={`Execution: ${status}`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 shrink-0" />
+          <span>{status}</span>
+        </Badge>
+      );
+    case 'error':
+    case 'failed':
+      return (
+        <Badge variant="fail" size={size} className={className} aria-label={`Execution: ${status}`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0" />
+          <span>{status}</span>
+        </Badge>
+      );
+    case 'skipped':
+    default:
+      return (
+        <Badge variant="notrun" size={size} className={className} aria-label={`Execution: ${status}`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+          <span>{status}</span>
+        </Badge>
+      );
+  }
+};

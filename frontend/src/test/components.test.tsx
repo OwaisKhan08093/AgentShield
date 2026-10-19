@@ -101,7 +101,7 @@ describe('Application Shell and Navigation', () => {
     expect(screen.getByText(/Scenario Catalog & Explorer/i)).toBeInTheDocument();
   });
 
-  it('renders Runs placeholder page on /runs', async () => {
+  it('renders Runs page on /runs', async () => {
     await act(async () => {
       render(
         <MemoryRouter initialEntries={['/runs']}>
@@ -110,7 +110,6 @@ describe('Application Shell and Navigation', () => {
       );
     });
     expect(screen.getByText(/Evaluation Runs & Trace Inspector/i)).toBeInTheDocument();
-    expect(screen.getByText(/PRD Days 21–22 Milestone/i)).toBeInTheDocument();
   });
 
   it('renders Documentation placeholder page on /docs', async () => {

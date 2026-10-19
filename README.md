@@ -17,6 +17,7 @@
 - **Discrete Assertion & Scoring Engine**: Strict distinction between `PASS`, `FAIL`, `ERROR`, and `NOT_RUN`. Mathematical calculation of Attack Success Rate (ASR), Protection Success Rate (PSR), Sensitive Data Exposure Rate, and composite Security Scores.
 - **Atomic SQLite Persistence**: ACID-compliant relational storage storing runs, scenario evaluations, findings, metric snapshots, and traces with automatic rollback on persistence failure.
 - **RESTful Inspection & Export API**: Endpoints to trigger evaluation runs, query paginated histories, inspect per-scenario findings, inspect chronological traces, and export machine-readable JSON reports.
+- **Web Evaluation Console (React + TypeScript + Vite)**: Interactive Scenario Explorer (`/scenarios`), Run Execution Controls (`POST /api/v1/runs`), Evaluation Run Dashboard (`/runs`), Scenario Result Drilldown (`/runs/:id`), Chronological Trace Inspector, and Security Findings Drawer.
 
 ---
 

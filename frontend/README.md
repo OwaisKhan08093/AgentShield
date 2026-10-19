@@ -2,7 +2,7 @@
 
 The AgentShield Web Console provides an automated, security-focused user interface for configuring, running, and analyzing security evaluations of tool-using AI customer support agents.
 
-Implemented through **PRD Day 20 (Scenario Catalog & Explorer)**.
+Implemented through **PRD Days 21–22 (Evaluation Run Dashboard, Execution Controls & Trace Inspector)**.
 
 ---
 
@@ -13,7 +13,7 @@ Implemented through **PRD Day 20 (Scenario Catalog & Explorer)**.
 - **Styling**: Tailwind CSS (dark security theme, accessible contrast, reduced-motion support)
 - **Routing**: React Router DOM v6
 - **Icons**: Lucide React
-- **Unit & Integration Testing**: Vitest + React Testing Library + JSDOM
+- **Unit & Integration Testing**: Vitest + React Testing Library + JSDOM (39 passing tests)
 
 ---
 
@@ -117,6 +117,14 @@ frontend/
     │   │   ├── Sidebar.tsx # Navigation sidebar with route indicators and badge
     │   │   ├── Layout.tsx  # Responsive layout wrapper with mobile drawer
     │   │   └── index.ts    # Re-export entrypoint for layout components
+    │   ├── runs/
+    │   │   ├── RunCreateModal.tsx        # Evaluation launch dialog (suite/agent/scenario selectors)
+    │   │   ├── RunHistoryTable.tsx       # Paginated run history table with outcomes & metrics
+    │   │   ├── RunMetricsOverview.tsx    # Security score, ASR, data exposure, and count cards
+    │   │   ├── ScenarioResultsTable.tsx  # Scenario results with actual vs expected status
+    │   │   ├── TraceInspector.tsx        # Chronological audit timeline & allow/deny badges
+    │   │   ├── FindingsList.tsx          # Grouped security findings by rule and severity
+    │   │   └── index.ts                  # Re-export entrypoint for runs components
     │   ├── scenarios/
     │   │   ├── ScenarioCard.tsx          # Card displaying scenario metadata, objective, and link
     │   │   ├── ScenarioFilters.tsx       # Text search, category/risk selects, and clear filters
@@ -136,13 +144,15 @@ frontend/
     │   ├── Overview.tsx          # Platform landing page, pipeline visualizer & health status
     │   ├── Scenarios.tsx         # Interactive Scenario Catalog & Explorer (PRD Day 20)
     │   ├── ScenarioDetail.tsx    # Comprehensive Scenario Detail View (PRD Day 20)
-    │   ├── RunsPlaceholder.tsx   # Intentional placeholder with live API runs test (Days 21–22)
+    │   ├── Runs.tsx              # Evaluation Run Dashboard & History (PRD Days 21–22)
+    │   ├── RunDetail.tsx         # Run Detail, Results, Traces & Findings (PRD Days 21–22)
     │   ├── DocsPlaceholder.tsx   # Live links to Swagger, ReDoc, OpenAPI schema, and GitHub
     │   └── NotFound.tsx          # Accessible 404 fallback page
     ├── test/
     │   ├── api-client.test.ts        # API client unit tests (URL parsing, HTTP errors, timeouts)
     │   ├── components.test.tsx       # UI primitive and route rendering integration tests
     │   ├── scenario-explorer.test.tsx# Catalog and detail tests (search, filters, 404, navigation)
+    │   ├── runs.test.tsx             # Runs creation, dashboard, traces, findings (15 tests)
     │   └── setup.ts                  # JSDOM test harness setup with fetch mocking
     └── utils/
         └── cn.ts                 # CSS class merger utility (clsx + tailwind-merge)
@@ -161,29 +171,51 @@ The interface uses a deliberate, high-contrast dark theme engineered for clarity
 | **`ERROR`** | Amber / Orange (`#f59e0b`) | Unhandled exception or test harness timeout. |
 | **`NOT_RUN`** | Slate / Gray (`#64748b`) | Scenario skipped or pending execution. |
 
+### Execution Status vs. Security Verdict Semantics
+
+The UI strictly differentiates between:
+- **Execution Status**: The runtime outcome of the tool or scenario (`success`, `denied`, `error`). For instance, a security policy correctly denying an unauthorized refund returns an execution status of `denied`.
+- **Security Evaluation Verdict**: The evaluator's assessment (`PASS`, `FAIL`, `ERROR`, `NOT_RUN`). In the above case, the scenario is marked `PASS` because the unauthorized access was correctly prevented.
+
 ---
 
-## 6. Scenario Catalog & Detail Views (PRD Day 20)
+## 6. Evaluation Run Dashboard & Controls (PRD Days 21–22)
 
-### Scenario Catalog & Explorer (`/scenarios`)
-- **Live Data Source**: `GET /api/v1/scenarios`
-- **Text Search**: Real-time filtering across `scenario_id`, `name`, `description`, `security_objective`, `category`, and `tags`.
-- **Category Filter**: Select from canonical categories dynamically derived from registry data (`benign_task`, `unauthorized_access`, `approval_bypass`, `data_exposure`, `malformed_input`, `direct_injection`, `indirect_injection`).
-- **Risk Filter**: Select by severity level (`critical`, `high`, `medium`, `low`, `informational`).
-- **Summary Metrics Bar**: Real-time counts of Total Scenarios, Critical Risk, High Risk, Medium Risk, and Low/Info counts.
-- **Empty & Error States**: Distinct handling for empty registry, zero search matches (with "Clear All Filters" button), and backend connection failure (with retry button).
+### Run Creation Workflow (`POST /api/v1/runs`)
+- **Interactive Modal**: Triggered via "New Evaluation" button across the console.
+- **Suite & Agent Selection**: Pre-configured for canonical suite (`support-agent-security-v1`) and target agent (`reference-agent`).
+- **Target Selection**: Run all 16 canonical scenarios or selectively choose individual test cases via catalog checkboxes.
+- **Execution Controls**: Options to toggle `continue_on_error`, `record_trace`, and configure per-scenario timeout limits (0.01s - 300s).
+- **Validation & Duplicate Protection**: Client-side validation prevents submission with zero scenarios or invalid timeouts. Double-submission is prevented while the request runs.
+- **Auto-Navigation**: On successful run completion, immediately routes to `/runs/:runId`.
 
-### Scenario Detail View (`/scenarios/:scenarioId`)
-- **Live Data Source**: `GET /api/v1/scenarios/{scenario_id}`
-- **Security Objective**: Dedicated prominent callout emphasizing the target boundary or policy under audit.
-- **Expected Behavior & Assertions**:
-  - Expected execution status (`success`, `denied`, `error`).
-  - Tool-level authorization denial requirement.
-  - Prohibited customer identity exposure constraints.
-  - Order data confidentiality requirements.
-  - Target tool invocation specification.
-- **Verdict Criteria**: Explicit criteria defining a `PASS` verdict vs. a `FAIL` security violation.
-- **Navigation & Usability**: Back to catalog navigation, copy scenario ID action, race-condition protection against rapid navigation, and 404 Not Found state.
+### Run History Dashboard (`/runs`)
+- **Live Data Source**: `GET /api/v1/runs?limit=20&offset=0`
+- **Paginated Listing**: Real-time evaluation history ordered newest-first with pagination controls.
+- **Overview Metrics**: Displays Run ID, suite version, creation timestamp, overall security outcome badge, execution status, scenario count breakdown (P/F/E/NR), and calculated Security Score & ASR.
+- **Search & Filter**: Real-time filtering by Run ID, status, or outcome.
+
+### Run Detail Dashboard (`/runs/:runId`)
+- **Metadata Banner**: Detailed run identifiers, started/completed timestamps, suite version, and evaluator version.
+- **Metrics Overview Strip**: Total scenarios, passed count, failed count, error count, and unexecuted count. Formatted display of Security Score (e.g., `85.0/100`), Pass Rate, Attack Success Rate (ASR), and Sensitive Data Exposure Rate.
+- **Scenario Results Table (`GET /api/v1/runs/{id}/results`)**:
+  - Lists each evaluated scenario with outcome verdict (`PASS`, `FAIL`, `ERROR`, `NOT_RUN`).
+  - Actual execution status vs. expected execution status.
+  - Security assertion badges (Attempt Detected, Violation Prevented, Data Protected).
+  - Expandable row revealing the evaluator's explanation and associated findings.
+  - Quick action to jump directly to the execution trace for that scenario.
+- **Chronological Trace Inspector (`GET /api/v1/runs/{id}/trace`)**:
+  - Deterministic 1-based chronological timeline of audit events (`sequence`, `timestamp`, `event_type`, `tool_name`).
+  - Clear Allow / Deny decision indicators and prominent `AUTHORIZATION DENIED` badges.
+  - Scenario filter dropdown allowing drill-down to a single scenario's execution events.
+  - Safe sanitized JSON payload inspector with syntax display and one-click clipboard copy.
+- **Security Findings Drawer & Filter**:
+  - Aggregates all security findings across evaluated scenarios.
+  - Filter by severity (`Critical`, `High`, `Medium`, `Low`) and search by rule name or message.
+  - Shows rule ID, title, severity, timestamp, and clickable link to the associated scenario.
+- **Raw JSON Report Export (`GET /api/v1/runs/{id}/report.json`)**:
+  - One-click download of the complete machine-readable evaluation report as a formatted `.json` file.
+  - In-app JSON viewer with syntax block and copy button.
 
 ---
 
@@ -197,17 +229,22 @@ The interface uses a deliberate, high-contrast dark theme engineered for clarity
 - [x] Comprehensive, typed API client (`ApiClient`, `apiClient`) with timeout protection and structured error handling.
 - [x] Complete TypeScript domain models matching backend Pydantic schemas.
 - [x] Professional landing/overview page detailing the 6-stage evaluation pipeline and true product scope.
-- [x] **Interactive Scenario Catalog & Explorer** at `/scenarios` (PRD Day 20).
-- [x] **Detailed Scenario Specification View** at `/scenarios/:scenarioId` (PRD Day 20).
-- [x] Comprehensive unit and integration test coverage across API client, UI primitives, and scenario explorer (24 passing tests).
+- [x] Interactive Scenario Catalog & Explorer at `/scenarios` (PRD Day 20).
+- [x] Detailed Scenario Specification View at `/scenarios/:scenarioId` (PRD Day 20).
+- [x] **Evaluation Run Creation Workflow & Controls** via `POST /api/v1/runs` (PRD Day 21).
+- [x] **Evaluation Run History Dashboard** at `/runs` via `GET /api/v1/runs` (PRD Day 21).
+- [x] **Run Detail & Results Dashboard** at `/runs/:runId` via `GET /api/v1/runs/{id}` and `GET /api/v1/runs/{id}/results` (PRD Day 22).
+- [x] **Execution Trace Inspector** with scenario filtering and allow/deny badges via `GET /api/v1/runs/{id}/trace` (PRD Day 22).
+- [x] **Security Findings Inspection & Severity Filtering** (PRD Day 22).
+- [x] **Full JSON Evaluation Report Export** via `GET /api/v1/runs/{id}/report.json` (PRD Day 22).
+- [x] Comprehensive unit and integration test suite (39 passing tests across 4 test suites).
 
 ---
 
 ## 8. Intentionally Deferred Milestones
 
-In accordance with PRD planning, the following modules are intentionally deferred to subsequent milestones:
+In accordance with PRD planning, the following modules are scheduled for the next milestones:
 
-- **PRD Days 21–22**: Evaluation Run Dashboard, Execution Controls, Findings Drawer & Sanitized Trace Viewer.
 - **PRD Day 23**: Machine-readable JSON Report Visualizer, Summary Metrics & CSV/JSON Export Views.
 - **PRD Day 24**: End-to-end demo script, polish, and final documentation.
 

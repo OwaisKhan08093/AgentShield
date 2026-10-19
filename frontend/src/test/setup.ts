@@ -14,7 +14,7 @@ beforeEach(() => {
           json: async () => ({ status: 'ok', service: 'agentshield-backend', version: '0.1.0' }),
         } as unknown as Response);
       }
-      if (url.includes('/scenarios')) {
+      if (url.includes('/scenarios') || url.includes('/runs')) {
         return Promise.resolve({
           ok: true,
           status: 200,

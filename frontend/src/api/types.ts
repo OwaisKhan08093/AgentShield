@@ -130,7 +130,7 @@ export interface RunCreateResponse {
 export interface EvaluationRunRecord {
   run_id: string;
   report_id: string;
-  suite_id: string;
+  suite_id?: string;
   suite_version: number;
   evaluator_version: string;
   status: string;
