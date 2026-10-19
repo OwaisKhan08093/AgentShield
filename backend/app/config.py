@@ -1,6 +1,7 @@
 """Configuration settings for AgentShield."""
 
-from pydantic import BaseModel
+import os
+from pydantic import BaseModel, Field
 
 
 class Settings(BaseModel):
@@ -12,6 +13,10 @@ class Settings(BaseModel):
     environment: str = "development"
     host: str = "127.0.0.1"
     port: int = 8000
+    database_path: str = Field(
+        default_factory=lambda: os.getenv("AGENTSHIELD_DATABASE_PATH", os.getenv("DATABASE_PATH", "agentshield.db")),
+        description="Configurable path to SQLite database file.",
+    )
 
 
 settings = Settings()

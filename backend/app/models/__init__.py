@@ -33,6 +33,7 @@ from app.models.finding import (
     ScenarioEvaluation,
     SummaryCounts,
 )
+from app.models.run import EvaluationRunRecord, RunStatus
 
 __all__ = [
     "AgentResponse",
@@ -43,6 +44,7 @@ __all__ = [
     "EvaluationMetrics",
     "EvaluationOutcome",
     "EvaluationReport",
+    "EvaluationRunRecord",
     "ExecutionStatus",
     "ExecutionTrace",
     "ExpectedBehavior",
@@ -52,6 +54,7 @@ __all__ = [
     "OrderStatus",
     "RiskLevel",
     "RiskMetric",
+    "RunStatus",
     "Scenario",
     "ScenarioCategory",
     "ScenarioEvaluation",
