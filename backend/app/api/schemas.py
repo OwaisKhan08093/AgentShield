@@ -62,6 +62,12 @@ class RunOptions(BaseModel):
         default=True,
         description="Whether to capture ordered trace events during agent execution.",
     )
+    timeout_seconds: Optional[float] = Field(
+        default=None,
+        ge=0.01,
+        le=300.0,
+        description="Optional per-scenario execution timeout limit in seconds.",
+    )
 
 
 class CreateRunRequest(BaseModel):

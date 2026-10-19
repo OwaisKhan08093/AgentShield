@@ -5,6 +5,7 @@ captures execution traces, and records expected versus actual outcomes.
 Never treats runner-level errors or incomplete executions as security passes.
 """
 
+import concurrent.futures
 import time
 import uuid
 from datetime import datetime, timezone
@@ -74,15 +75,18 @@ class ScenarioRunner:
         self,
         agent: Optional[BaseAgent] = None,
         agent_factory: Optional[Callable[[], BaseAgent]] = None,
+        timeout_seconds: Optional[float] = None,
     ):
-        """Initialize the runner with an agent instance or factory.
+        """Initialize the runner with an agent instance, factory, or timeout limit.
 
         Args:
             agent: Pre-configured agent instance. If None and agent_factory is None,
                    a fresh default ReferenceAgent with synthetic data is created.
             agent_factory: Optional callable returning a fresh BaseAgent per run.
+            timeout_seconds: Optional per-scenario execution timeout limit in seconds.
         """
         self._agent_factory = agent_factory
+        self.timeout_seconds = timeout_seconds
         if agent is not None:
             self._agent = agent
         elif agent_factory is not None:
@@ -101,14 +105,19 @@ class ScenarioRunner:
             return self._agent_factory()
         return self._agent
 
-    def run_scenario(self, scenario: Scenario) -> ScenarioResult:
+    def run_scenario(
+        self,
+        scenario: Scenario,
+        timeout_seconds: Optional[float] = None,
+    ) -> ScenarioResult:
         """Execute a single scenario through the agent and capture trace evidence.
 
-        Fails closed on unexpected exceptions: any unhandled error is recorded as
-        ERROR execution status and never treated as a successful security outcome.
+        Fails closed on unexpected exceptions or execution timeouts: unhandled errors
+        are recorded as ERROR execution status and never treated as a successful security outcome.
 
         Args:
             scenario: The Scenario definition to execute.
+            timeout_seconds: Optional scenario-specific execution timeout in seconds.
 
         Returns:
             ScenarioResult containing expected behavior, actual outcome, and trace.
@@ -121,11 +130,34 @@ class ScenarioRunner:
         agent_response = None
         error_message: Optional[str] = None
 
+        effective_timeout = timeout_seconds if timeout_seconds is not None else self.timeout_seconds
+
         try:
             agent = self.get_fresh_agent()
-            agent_response = agent.execute(scenario.request)
-            actual_status = agent_response.status
-            execution_status = ScenarioExecutionStatus.COMPLETED
+            timed_out = False
+            if effective_timeout is not None and effective_timeout > 0:
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(agent.execute, scenario.request)
+                    try:
+                        agent_response = future.result(timeout=effective_timeout)
+                    except concurrent.futures.TimeoutError:
+                        timed_out = True
+                        actual_status = ExecutionStatus.ERROR
+                        execution_status = ScenarioExecutionStatus.ERROR
+                        error_message = f"Scenario execution timed out after {effective_timeout}s"
+                        agent_response = None
+                    except Exception as exc:
+                        timed_out = True
+                        actual_status = ExecutionStatus.ERROR
+                        execution_status = ScenarioExecutionStatus.ERROR
+                        error_message = f"Runner caught unexpected exception ({type(exc).__name__}): {str(exc)}"
+                        agent_response = None
+            else:
+                agent_response = agent.execute(scenario.request)
+
+            if not timed_out:
+                actual_status = agent_response.status
+                execution_status = ScenarioExecutionStatus.COMPLETED
         except Exception as exc:
             # Handle unexpected exceptions safely without treating them as passes
             actual_status = ExecutionStatus.ERROR
@@ -154,12 +186,17 @@ class ScenarioRunner:
         self,
         scenarios: Iterable[Scenario],
         run_id: Optional[str] = None,
+        timeout_seconds: Optional[float] = None,
     ) -> SuiteExecutionResult:
         """Execute multiple scenarios in predictable, deterministic sequence.
+
+        If a catastrophic exception disrupts the execution loop, remaining unexecuted
+        scenarios are explicitly recorded as INCOMPLETE rather than silently dropped.
 
         Args:
             scenarios: Iterable of Scenario definitions to execute.
             run_id: Optional identifier for the run session.
+            timeout_seconds: Optional per-scenario timeout limit.
 
         Returns:
             SuiteExecutionResult containing ordered individual results.
@@ -167,10 +204,39 @@ class ScenarioRunner:
         started_at = datetime.now(timezone.utc).isoformat()
         resolved_run_id = run_id or f"run_{uuid.uuid4().hex[:12]}"
         results: List[ScenarioResult] = []
+        scenario_list = list(scenarios)
 
-        for scenario in scenarios:
-            result = self.run_scenario(scenario)
-            results.append(result)
+        for idx, scenario in enumerate(scenario_list):
+            try:
+                result = self.run_scenario(scenario, timeout_seconds=timeout_seconds)
+                results.append(result)
+            except Exception as exc:
+                error_result = ScenarioResult(
+                    scenario_id=scenario.scenario_id,
+                    scenario_name=scenario.name,
+                    category=scenario.category,
+                    expected_behavior=scenario.expected_behavior,
+                    actual_status=ExecutionStatus.ERROR,
+                    execution_status=ScenarioExecutionStatus.ERROR,
+                    agent_response=None,
+                    error_message=f"Catastrophic runner failure on scenario {scenario.scenario_id}: {exc}",
+                )
+                results.append(error_result)
+
+                # Explicitly record remaining scenarios as INCOMPLETE (NOT_RUN)
+                for remaining in scenario_list[idx + 1:]:
+                    incomplete_result = ScenarioResult(
+                        scenario_id=remaining.scenario_id,
+                        scenario_name=remaining.name,
+                        category=remaining.category,
+                        expected_behavior=remaining.expected_behavior,
+                        actual_status=None,
+                        execution_status=ScenarioExecutionStatus.INCOMPLETE,
+                        agent_response=None,
+                        error_message=None,
+                    )
+                    results.append(incomplete_result)
+                break
 
         completed_at = datetime.now(timezone.utc).isoformat()
 

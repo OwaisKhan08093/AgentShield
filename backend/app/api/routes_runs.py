@@ -91,13 +91,13 @@ def create_run(
 
     # 4. Execute runner
     try:
-        runner = ScenarioRunner()
+        runner = ScenarioRunner(timeout_seconds=request.options.timeout_seconds)
         suite_result = runner.run_scenarios(target_scenarios)
     except Exception as e:
-        logger.error("Runner execution failed: %s", e)
+        logger.error("Runner execution failed: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Execution error during scenario run: {e}",
+            detail="Scenario execution failed due to an internal error.",
         )
 
     # 5. Evaluate results
@@ -105,20 +105,20 @@ def create_run(
         evaluator = get_default_evaluator()
         report = evaluator.evaluate_suite(suite_result, registry=registry)
     except Exception as e:
-        logger.error("Evaluation engine failed: %s", e)
+        logger.error("Evaluation engine failed: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Evaluation engine error: {e}",
+            detail="Security evaluation failed due to an internal engine error.",
         )
 
     # 6. Persist report and traces to SQLite
     try:
         repository.save_report(report, suite_result=suite_result)
-    except StorageError as e:
-        logger.error("Storage persistence failed for run %s: %s", report.run_id, e)
+    except (StorageError, Exception) as e:
+        logger.error("Storage persistence failed for run %s: %s", report.run_id, e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Storage persistence error: {e}",
+            detail="Failed to persist evaluation report to storage.",
         )
 
     metrics_summary = {
