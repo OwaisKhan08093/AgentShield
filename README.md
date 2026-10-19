@@ -17,7 +17,7 @@
 - **Discrete Assertion & Scoring Engine**: Strict distinction between `PASS`, `FAIL`, `ERROR`, and `NOT_RUN`. Mathematical calculation of Attack Success Rate (ASR), Protection Success Rate (PSR), Sensitive Data Exposure Rate, and composite Security Scores.
 - **Atomic SQLite Persistence**: ACID-compliant relational storage storing runs, scenario evaluations, findings, metric snapshots, and traces with automatic rollback on persistence failure.
 - **RESTful Inspection & Export API**: Endpoints to trigger evaluation runs, query paginated histories, inspect per-scenario findings, inspect chronological traces, and export machine-readable JSON reports.
-- **Web Evaluation Console (React + TypeScript + Vite)**: Interactive Scenario Explorer (`/scenarios`), Run Execution Controls (`POST /api/v1/runs`), Evaluation Run Dashboard (`/runs`), Scenario Result Drilldown (`/runs/:id`), Chronological Trace Inspector, and Security Findings Drawer.
+- **Web Evaluation Console (React + TypeScript + Vite)**: Interactive Scenario Explorer (`/scenarios`), Run Execution Controls (`POST /api/v1/runs`), Evaluation Run Dashboard (`/runs`), Scenario Result Drilldown (`/runs/:id`), Chronological Trace Inspector, Security Findings Drawer, Collapsible JSON Report Visualizer, Summary Metrics Breakdowns, and Formula-Safe CSV Exports (Scenarios, Findings, Metrics).
 
 ---
 
@@ -323,6 +323,6 @@ See [frontend/README.md](frontend/README.md) for comprehensive instructions on e
 - [x] **Day 4**: SQLite Persistence Layer, Scenario & Run APIs, Traces & Reports
 - [x] **Day 5 (PRD Days 17–18)**: API Integration Testing, Real Timeout Handling, Failure Semantics & Documentation
 - [x] **Day 6 (PRD Day 19)**: Frontend Scaffolding, Project Setup & Security Design System (React, Vite, TS, Tailwind, Router, Typed API Client)
-- [x] **Day 7 (PRD Day 20)**: Scenario Catalog & Explorer (Live `/api/v1/scenarios` integration, search & category/risk filters, detail view `/scenarios/:scenarioId`, expected assertions & verdict inspector)
-- [ ] **PRD Days 21–22**: Evaluation Run Dashboard, Execution Controls & Trace Inspector
-- [ ] **PRD Days 23–24**: JSON Report Visualizer, Metrics Analytics & Demo Script
+- [x] **Day 8 (PRD Days 21–22)**: Evaluation Run Dashboard, Execution Controls & Trace Inspector
+- [x] **Day 9 (PRD Day 23)**: Machine-Readable JSON Report Visualizer, Summary Metrics & CSV/JSON Export Views
+- [ ] **PRD Day 24**: End-to-end Demo Script, Polish & Final Documentation

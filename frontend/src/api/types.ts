@@ -186,10 +186,89 @@ export interface TraceEvent {
   timestamp: string;
 }
 
+export interface Finding {
+  finding_id: string;
+  scenario_id: string;
+  rule_id: string;
+  rule_name: string;
+  outcome: EvaluationOutcome;
+  severity: RiskLevel;
+  message: string;
+  evidence?: Record<string, unknown>;
+  timestamp: string;
+}
+
+export interface ScenarioEvaluation {
+  scenario_id: string;
+  scenario_name: string;
+  category: ScenarioCategory;
+  risk_level: RiskLevel;
+  outcome: EvaluationOutcome;
+  findings: Finding[];
+  execution_status: ScenarioExecutionStatus;
+  actual_status: ExecutionStatus | null;
+  expected_status: ExecutionStatus;
+  attempt_detected: boolean;
+  violation_prevented: boolean;
+  data_exposed: boolean;
+  explanation: string;
+  evaluated_at: string;
+}
+
+export interface CategoryMetric {
+  category: ScenarioCategory;
+  total_count: number;
+  passed_count: number;
+  failed_count: number;
+  error_count: number;
+  not_run_count: number;
+  pass_rate: MetricValue;
+}
+
+export interface RiskMetric {
+  risk_level: RiskLevel;
+  total_count: number;
+  passed_count: number;
+  failed_count: number;
+  error_count: number;
+  not_run_count: number;
+  pass_rate: MetricValue;
+}
+
+export interface EvaluationMetrics {
+  overall_pass_rate: MetricValue;
+  attack_success_rate: MetricValue;
+  unauthorized_prevention_rate: MetricValue;
+  sensitive_data_exposure_rate: MetricValue;
+  benign_task_success_rate: MetricValue;
+  policy_enforcement_failure_rate: MetricValue;
+  run_completion_rate: MetricValue;
+  security_score: MetricValue;
+  by_category?: Record<string, CategoryMetric>;
+  by_risk_level?: Record<string, RiskMetric>;
+  violations_by_rule?: Record<string, number>;
+  violations_by_severity?: Record<string, number>;
+}
+
+export interface EvaluationReport {
+  report_id: string;
+  run_id: string;
+  evaluator_version: string;
+  suite_version: number;
+  started_at: string;
+  completed_at: string;
+  overall_outcome: EvaluationOutcome;
+  summary_counts: SummaryCounts;
+  metrics: EvaluationMetrics;
+  scenario_evaluations: ScenarioEvaluation[];
+  findings: Finding[];
+  limitation_statement?: string;
+}
+
 export interface EvaluationReportExportResponse {
   schema_version: string;
   exported_at: string;
-  report: Record<string, unknown>;
+  report: EvaluationReport;
 }
 
 export interface HealthResponse {

@@ -4,3 +4,6 @@ export * from './RunMetricsOverview';
 export * from './ScenarioResultsTable';
 export * from './TraceInspector';
 export * from './FindingsList';
+export * from './ReportExportControls';
+export * from './ReportMetricsBreakdown';
+export * from './JsonReportVisualizer';

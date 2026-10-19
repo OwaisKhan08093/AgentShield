@@ -9,8 +9,6 @@ import {
   Terminal,
   ShieldAlert,
   FileCode,
-  Copy,
-  Check,
   AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -23,11 +21,17 @@ import { RunMetricsOverview } from '@/components/runs/RunMetricsOverview';
 import { ScenarioResultsTable } from '@/components/runs/ScenarioResultsTable';
 import { TraceInspector } from '@/components/runs/TraceInspector';
 import { FindingsList } from '@/components/runs/FindingsList';
+import {
+  ReportExportControls,
+  ReportMetricsBreakdown,
+  JsonReportVisualizer,
+} from '@/components/runs';
 import { apiClient, ApiClientError } from '@/api/client';
 import type {
   EvaluationRunRecord,
   ScenarioResultResponse,
   TraceEvent,
+  EvaluationReportExportResponse,
 } from '@/api/types';
 
 type ActiveTab = 'results' | 'trace' | 'findings' | 'raw';
@@ -43,14 +47,15 @@ export const RunDetail: React.FC = () => {
   const [run, setRun] = useState<EvaluationRunRecord | null>(null);
   const [results, setResults] = useState<ScenarioResultResponse[]>([]);
   const [traceEvents, setTraceEvents] = useState<TraceEvent[]>([]);
-  const [rawReport, setRawReport] = useState<Record<string, unknown> | null>(null);
+  const [reportExport, setReportExport] = useState<EvaluationReportExportResponse | null>(null);
 
   // Loading & error states
   const [isLoading, setIsLoading] = useState(true);
   const [isTraceLoading, setIsTraceLoading] = useState(false);
+  const [isReportLoading, setIsReportLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reportError, setReportError] = useState<string | null>(null);
   const [isNotFound, setIsNotFound] = useState(false);
-  const [copiedReport, setCopiedReport] = useState(false);
 
   // Fetch Run and Results
   const fetchRunData = useCallback(async (id: string) => {
@@ -61,7 +66,8 @@ export const RunDetail: React.FC = () => {
     setRun(null);
     setResults([]);
     setTraceEvents([]);
-    setRawReport(null);
+    setReportExport(null);
+    setReportError(null);
 
     try {
       const [runRecord, runResults] = await Promise.all([
@@ -95,6 +101,20 @@ export const RunDetail: React.FC = () => {
     }
   }, []);
 
+  // Fetch full report JSON
+  const fetchReportData = useCallback(async (id: string) => {
+    setIsReportLoading(true);
+    setReportError(null);
+    try {
+      const exportData = await apiClient.getRunReport(id);
+      setReportExport(exportData);
+    } catch (err) {
+      setReportError(err instanceof Error ? err.message : 'Failed to retrieve evaluation report');
+    } finally {
+      setIsReportLoading(false);
+    }
+  }, []);
+
   // Primary load effect
   useEffect(() => {
     if (!runId) return;
@@ -109,11 +129,22 @@ export const RunDetail: React.FC = () => {
     }
   }, [runId, activeTab, selectedScenarioForTrace, isNotFound, error, fetchTraceData]);
 
+  // Load report when user switches to Report tab
+  useEffect(() => {
+    if (!runId || isNotFound || error) return;
+    if (activeTab === 'raw' && !reportExport) {
+      fetchReportData(runId);
+    }
+  }, [runId, activeTab, reportExport, isNotFound, error, fetchReportData]);
+
   const handleDownloadReport = async () => {
     if (!runId) return;
     try {
-      const exportData = await apiClient.exportRunReport(runId);
-      const jsonStr = JSON.stringify(exportData.report || exportData, null, 2);
+      const exportData = reportExport || (await apiClient.getRunReport(runId));
+      if (!reportExport) {
+        setReportExport(exportData);
+      }
+      const jsonStr = JSON.stringify(exportData, null, 2);
       const blob = new Blob([jsonStr], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -128,33 +159,16 @@ export const RunDetail: React.FC = () => {
     }
   };
 
-  const handleLoadRawReport = async () => {
-    if (!runId || rawReport) return;
-    try {
-      const exportData = await apiClient.exportRunReport(runId);
-      setRawReport((exportData.report as Record<string, unknown>) || exportData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to retrieve raw report');
-    }
-  };
-
   const handleTabChange = (tab: ActiveTab) => {
     setActiveTab(tab);
-    if (tab === 'raw' && !rawReport) {
-      handleLoadRawReport();
+    if (tab === 'raw' && !reportExport && runId) {
+      fetchReportData(runId);
     }
   };
 
   const handleSelectScenarioForTrace = (scenarioId: string) => {
     setSelectedScenarioForTrace(scenarioId);
     setActiveTab('trace');
-  };
-
-  const copyRawReport = () => {
-    if (!rawReport) return;
-    navigator.clipboard.writeText(JSON.stringify(rawReport, null, 2));
-    setCopiedReport(true);
-    setTimeout(() => setCopiedReport(false), 2000);
   };
 
   const formatDate = (isoString?: string) => {
@@ -388,7 +402,7 @@ export const RunDetail: React.FC = () => {
           role="tab"
         >
           <FileCode className="w-4 h-4" />
-          <span>Report JSON</span>
+          <span>Report & Visualizer</span>
         </button>
       </div>
 
@@ -429,41 +443,24 @@ export const RunDetail: React.FC = () => {
         )}
 
         {activeTab === 'raw' && (
-          <div className="bg-surface rounded-xl border border-surface-border p-4 space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-surface-border/50">
-              <span className="text-xs font-semibold text-slate-300">
-                Evaluation Report Export Schema (GET /api/v1/runs/{run.run_id}/report.json)
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2.5 text-xs text-slate-300 hover:text-white gap-1.5"
-                onClick={copyRawReport}
-                disabled={!rawReport}
-              >
-                {copiedReport ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="text-emerald-400">Copied</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>Copy JSON</span>
-                  </>
-                )}
-              </Button>
-            </div>
+          <div className="space-y-6">
+            <ReportExportControls
+              runId={run.run_id}
+              report={reportExport?.report}
+              exportData={reportExport as unknown as Record<string, unknown>}
+            />
 
-            {rawReport ? (
-              <pre className="p-4 rounded-lg bg-surface-elevated/70 border border-surface-border text-xs font-mono text-slate-300 overflow-x-auto max-h-[600px] leading-relaxed select-text">
-                {JSON.stringify(rawReport, null, 2)}
-              </pre>
-            ) : (
-              <div className="py-8 flex justify-center">
-                <LoadingSpinner message="Fetching raw report JSON..." />
-              </div>
+            {reportExport?.report && (
+              <ReportMetricsBreakdown report={reportExport.report} />
             )}
+
+            <JsonReportVisualizer
+              runId={run.run_id}
+              exportResponse={reportExport}
+              report={reportExport?.report}
+              isLoading={isReportLoading}
+              error={reportError}
+            />
           </div>
         )}
       </div>

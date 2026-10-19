@@ -208,6 +208,13 @@ export class AgentShieldClient {
   public async exportRunReport(runId: string): Promise<EvaluationReportExportResponse> {
     return this.request<EvaluationReportExportResponse>(API_CONFIG.endpoints.runReportJson(runId));
   }
+
+  /**
+   * Alias for exportRunReport for report retrieval.
+   */
+  public async getRunReport(runId: string): Promise<EvaluationReportExportResponse> {
+    return this.exportRunReport(runId);
+  }
 }
 
 // Aliases

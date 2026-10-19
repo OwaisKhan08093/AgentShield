@@ -2,7 +2,7 @@
 
 The AgentShield Web Console provides an automated, security-focused user interface for configuring, running, and analyzing security evaluations of tool-using AI customer support agents.
 
-Implemented through **PRD Days 21–22 (Evaluation Run Dashboard, Execution Controls & Trace Inspector)**.
+Implemented through **PRD Day 23 (Machine-Readable JSON Report Visualizer, Summary Metrics & CSV/JSON Export Views)**.
 
 ---
 
@@ -13,7 +13,7 @@ Implemented through **PRD Days 21–22 (Evaluation Run Dashboard, Execution Cont
 - **Styling**: Tailwind CSS (dark security theme, accessible contrast, reduced-motion support)
 - **Routing**: React Router DOM v6
 - **Icons**: Lucide React
-- **Unit & Integration Testing**: Vitest + React Testing Library + JSDOM (39 passing tests)
+- **Unit & Integration Testing**: Vitest + React Testing Library + JSDOM (66 passing tests across 6 suites)
 
 ---
 
@@ -213,13 +213,51 @@ The UI strictly differentiates between:
   - Aggregates all security findings across evaluated scenarios.
   - Filter by severity (`Critical`, `High`, `Medium`, `Low`) and search by rule name or message.
   - Shows rule ID, title, severity, timestamp, and clickable link to the associated scenario.
-- **Raw JSON Report Export (`GET /api/v1/runs/{id}/report.json`)**:
-  - One-click download of the complete machine-readable evaluation report as a formatted `.json` file.
-  - In-app JSON viewer with syntax block and copy button.
+---
+
+## 7. Report Visualizer, Summary Metrics & CSV/JSON Exports (PRD Day 23)
+
+### Machine-Readable JSON Report Visualizer (`GET /api/v1/runs/{id}/report.json`)
+- **Real-Data Source**: Consumes `EvaluationReportExportResponse` containing schema version, export timestamp, evaluator metadata, suite version, outcomes, and computed metrics.
+- **Collapsible Interactive Tree View**: Recursive tree rendering of nested JSON objects and arrays with expand/collapse toggles, child count indicators, and depth indentation guides.
+- **Syntax Color Coding**: Safe DOM text node rendering with distinct styles for keys (cyan), strings (green), numbers (purple), booleans (amber), and null values (rose). Never renders JSON content as executable HTML.
+- **Search & Filter**: Real-time filtering and highlight across JSON keys and primitive values with quick clear action.
+- **Expand All / Collapse All**: One-click actions to recursively expand the complete report hierarchy or collapse to root.
+- **Raw Formatted JSON View Toggle**: Instant switch between the interactive tree and formatted preformatted code block for copy-paste workflows.
+- **Copy & Download Controls**: One-click clipboard copy with animated success/failure feedback, and full downloadable JSON report (`agentshield-report-{run_id}.json`) without truncation.
+
+### Comprehensive Summary Metrics & Visual Breakdowns
+- **Suite-Level Security Metrics Grid**:
+  - `security_score`: Composite Security Score (weighted evaluation metric).
+  - `overall_pass_rate`: Overall Pass Rate.
+  - `attack_success_rate`: Adversarial Attack Success Rate (ASR).
+  - `unauthorized_prevention_rate`: Unauthorized Tool Prevention Rate.
+  - `sensitive_data_exposure_rate`: Sensitive Data / Secret Exposure Rate.
+  - `benign_task_success_rate`: Positive Control / Benign Task Success Rate.
+  - `policy_enforcement_failure_rate`: Policy Enforcement Failure Rate.
+  - `run_completion_rate`: Test Suite Execution Completion Rate.
+- **Mathematical Integrity**: Preserves original numerators, denominators, and percentages (`(numerator/denominator)`).
+- **Safe Zero-Denominator Handling**: Metrics with 0 denominator display as `N/A` with `(0/0)` without throwing `NaN` or crashing. Distinguishes 0.0% from unavailable data.
+- **Outcome Counts Strip**: Displays exact tallies for `PASS`, `FAIL`, `ERROR`, and `NOT_RUN` with semantic badge coloring. Never treats `ERROR` or `NOT_RUN` as `PASS`.
+- **Category & Risk-Level Breakdowns**: Structured tables and progress bars displaying pass rates and scenario counts across attack categories and risk levels (Critical, High, Medium, Low).
+- **Violations by Rule & Severity**: Summary pill tallies displaying occurrences per security rule and risk tier.
+- **Evaluation Limitation Disclosure**: Prominently features the evaluator's `limitation_statement` warning that synthetic test suites do not guarantee universal real-world LLM security.
+
+### CSV Export Utilities (`agentshield-*.csv`)
+Provides client-side RFC-4180 compliant CSV exports for downstream security analytics:
+
+| Export Dataset | Filename Pattern | Exported Columns & Descriptions |
+| :--- | :--- | :--- |
+| **Scenario Results** | `agentshield-scenarios-{runId}.csv` | `Run ID`, `Scenario ID`, `Scenario Name`, `Category`, `Risk Level`, `Outcome`, `Execution Status`, `Actual Status`, `Expected Status`, `Attempt Detected`, `Violation Prevented`, `Data Exposed`, `Findings Count`, `Explanation`, `Evaluated At` |
+| **Security Findings** | `agentshield-findings-{runId}.csv` | `Run ID`, `Finding ID`, `Scenario ID`, `Rule ID`, `Rule Name`, `Severity`, `Outcome`, `Message`, `Timestamp`. (Button automatically disabled with descriptive tooltip when findings count is 0) |
+| **Evaluation Metrics** | `agentshield-metrics-{runId}.csv` | `Run ID`, `Dataset`, `Metric Key`, `Name`, `Numerator`, `Denominator`, `Value`, `Display Value`, `Formula`, `Description`. Includes Core Metrics, Category Breakdowns, Risk Breakdowns, Rule Violations, and Severity Breakdowns. |
+
+- **Formula-Injection Defense**: Any string beginning with spreadsheet formula triggers (`=`, `+`, `-`, `@`, `\t`, `\r`) is automatically prefixed with `'` to neutralize malicious formula execution in Microsoft Excel, Google Sheets, and LibreOffice Calc.
+- **RFC-4180 Escaping**: Commas, double-quotes (`""`), carriage returns, and newlines are properly wrapped in quotes.
 
 ---
 
-## 7. Current Implemented Scope
+## 8. Current Implemented Scope
 
 - [x] Modern React + Vite + TypeScript application scaffolding in `frontend/`.
 - [x] Tailored security dark design system tokens, typography, and utility classes.
@@ -236,16 +274,16 @@ The UI strictly differentiates between:
 - [x] **Run Detail & Results Dashboard** at `/runs/:runId` via `GET /api/v1/runs/{id}` and `GET /api/v1/runs/{id}/results` (PRD Day 22).
 - [x] **Execution Trace Inspector** with scenario filtering and allow/deny badges via `GET /api/v1/runs/{id}/trace` (PRD Day 22).
 - [x] **Security Findings Inspection & Severity Filtering** (PRD Day 22).
-- [x] **Full JSON Evaluation Report Export** via `GET /api/v1/runs/{id}/report.json` (PRD Day 22).
-- [x] Comprehensive unit and integration test suite (39 passing tests across 4 test suites).
+- [x] **Machine-Readable JSON Report Visualizer** with collapsible tree, search, and raw JSON view (PRD Day 23).
+- [x] **Comprehensive Summary Metrics Breakdown** with 8 core metrics, category & risk breakdowns, and limitation disclosure (PRD Day 23).
+- [x] **RFC-4180 CSV Export Utility** for Scenarios, Findings, and Metrics with formula injection mitigation (PRD Day 23).
+- [x] Comprehensive unit and integration test suite (66 passing tests across 6 test suites).
 
 ---
 
-## 8. Intentionally Deferred Milestones
+## 9. Next Milestone (PRD Day 24)
 
-In accordance with PRD planning, the following modules are scheduled for the next milestones:
-
-- **PRD Day 23**: Machine-readable JSON Report Visualizer, Summary Metrics & CSV/JSON Export Views.
+In accordance with PRD planning, the next milestone is:
 - **PRD Day 24**: End-to-end demo script, polish, and final documentation.
 
 ---
