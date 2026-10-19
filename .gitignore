@@ -39,6 +39,7 @@ backend/venv/
 .env.*.local
 !.env.example
 !backend/.env.example
+!frontend/.env.example
 
 # Unit test / coverage reports
 .pytest_cache/

@@ -300,6 +300,20 @@ curl -X GET "http://127.0.0.1:8000/api/v1/runs/run_a1b2c3d4e5f6/report.json" -o 
 
 ---
 
+## Frontend Web Console Quickstart
+
+The AgentShield Web Console is located in `frontend/`:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+See [frontend/README.md](frontend/README.md) for comprehensive instructions on environment configuration (`VITE_API_BASE_URL`), build commands, and design system tokens.
+
+---
+
 ## Roadmap & Milestone Progress
 
 - [x] **Day 1**: Project Foundation & FastAPI Scaffold
@@ -307,4 +321,7 @@ curl -X GET "http://127.0.0.1:8000/api/v1/runs/run_a1b2c3d4e5f6/report.json" -o 
 - [x] **Day 3**: Reference Agent, 16 Scenario Library, Runner & Security Evaluator
 - [x] **Day 4**: SQLite Persistence Layer, Scenario & Run APIs, Traces & Reports
 - [x] **Day 5 (PRD Days 17–18)**: API Integration Testing, Real Timeout Handling, Failure Semantics & Documentation
-- [ ] **Phase 4 (PRD Days 19–24)**: React / Vite Web Dashboard & Visualizer
+- [x] **Day 6 (PRD Day 19)**: Frontend Scaffolding, Project Setup & Security Design System (React, Vite, TS, Tailwind, Router, Typed API Client)
+- [ ] **PRD Day 20**: Scenario Explorer & Definition Inspector
+- [ ] **PRD Days 21–22**: Evaluation Run Dashboard, Execution Controls & Trace Inspector
+- [ ] **PRD Days 23–24**: JSON Report Visualizer & Metrics Analytics
